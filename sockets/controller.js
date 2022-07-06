@@ -4,16 +4,15 @@ const ticketControl = new TicketControl();
 
 const socketController = (socket) => {
 
+    //cuando se conecta el cliente
     socket.emit('ultimo-ticket', ticketControl.ultimo);
     socket.emit('estado-actual', ticketControl.ultimos4);
+    socket.emit('tickets-pendientes', ticketControl.tickets.length);
 
     socket.on('siguiente-ticket', (payload, callback) => {
         const siguiente = ticketControl.siguiente();
         callback(siguiente);
-
-        //TODO: Notificar que hay un nuevo ticket pendienente de asignar
-
-
+        socket.broadcast.emit('tickets-pendientes', ticketControl.tickets.length);
     });
 
     socket.on('atender-ticket', ({ escritorio }, callback) => {
@@ -26,8 +25,9 @@ const socketController = (socket) => {
 
         const ticket = ticketControl.atenderTicket(escritorio);
 
-        //TODO: Notificar cambio en los ultimos4, broadcast: mantiene una sincronia entre dos pantallas
+        //TODO: Notificar cambio en los ultimos4, broadcast: mantiene una sincronia entre todos los clientes que esten escuchando
         socket.broadcast.emit('estado-actual', ticketControl.ultimos4);
+        socket.broadcast.emit('tickets-pendientes', ticketControl.tickets.length);
 
         if (!ticket) {
             callback({ ok: false, msg: 'Ya no hay ticket pendienente' });
